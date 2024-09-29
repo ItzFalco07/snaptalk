@@ -11,6 +11,7 @@ const router = require('./modules/Routes');
 const app = express();
 app.use(cors({
     credentials: true,
+    origin: "https://snaptalks.vercel.app"
 }));
 app.use(express.json());
 
