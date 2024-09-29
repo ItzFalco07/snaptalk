@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {toast} from 'react-toastify'
 
 const People = () => {
   const [Users, setUsers] = useState([]);
@@ -28,9 +29,10 @@ const People = () => {
   const [OutgoingRequests, setOutgoingRequest] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingButtons, setLoadingButtons] = useState({});
-  const [dialogOpen, setDialogOpen] = useState(false); // Manage dialog open state
+  const [loadingAccepting, setLoadingAccepting] = useState({});
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [SelectedIncomming, setSelectedIncomming] = useState(false);
-  
+
   const serverUrl = import.meta.env.VITE_SERVER_URL;
   const currentUser = JSON.parse(localStorage.getItem('User'));
   const colors = [
@@ -47,7 +49,7 @@ const People = () => {
   ];
 
   function RandomColor() {
-      return colors[Math.floor(Math.random()*10)]
+    return colors[Math.floor(Math.random() * 10)];
   }
 
   useEffect(() => {
@@ -98,7 +100,7 @@ const People = () => {
 
     return (
       <Button
-        onClick={() => { AddFriend(user.Name) }}
+        onClick={() => { AddFriend(user.Name); }}
         variant="primary"
         className="w-full"
         disabled={isRequestSent || isLoading}
@@ -116,8 +118,10 @@ const People = () => {
 
     try {
       let res = await axios.post(`${serverUrl}/sendreq`, { userFrom, userTo });
-      if (res) {
+      if (res && res.data != 'User already exists') {
         setOutgoingRequest((prev) => [...prev, userTo]);
+      } else {
+        toast.error('User Alredy in you Friend list')
       }
     } catch (error) {
       console.error(error);
@@ -125,6 +129,25 @@ const People = () => {
       setLoadingButtons(prev => ({ ...prev, [userTo]: false }));
     }
   };
+
+  async function AcceptRequest(a) {
+    setLoadingAccepting(prev => ({ ...prev, [a]: true })); // Set loading state for the specific request
+
+    try {
+      const res = await axios.post(`${serverUrl}/acceptRequest`, {
+        Acceptor: currentUser.Name,
+        AcceptOf: a,
+      });
+
+      if (res.data === 'success') {
+        setIncommingRequest(prev => prev.filter(request => request !== a));
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoadingAccepting(prev => ({ ...prev, [a]: false })); // Reset loading state for the specific request
+    }
+  }
 
   return (
     <div className="w-full h-screen p-5 overflow-hidden">
@@ -161,27 +184,37 @@ const People = () => {
             <AlertDialogCancel className="w-[fit-content] absolute right-0 m-6">X</AlertDialogCancel>
             <AlertDialogTitle>{SelectedIncomming ? "Incomming Friend Requests" : "Outgoing Friend Requests"}</AlertDialogTitle>
               {SelectedIncomming ?
-              <div>
-                
-              </div>
-              : 
-              <div className="w-full h-[14em]  overflow-scroll">
-                {OutgoingRequests.map((request, index)=> (
-
-                  <div key={index} id="outgoingRequest" className="w-full relative flex items-center mt-5 gap-2 px-4 h-[50px] bg-secondary rounded-[6px]">
-                    <div style={{backgroundColor: RandomColor()}} className="w-[34px] h-[34px] rounded-full font-semibold flex items-center justify-center bg-red-400">{request[0]}</div>
-                    <h1 className="font-semibold">{request}</h1>
-                    <div id="dot" className="w-3 h-3 bg-green-500 rounded-full absolute right-[6.4em] "></div>
-                    <div id="dot" className="w-3 h-3 bg-green-500 rounded-full absolute right-[6.4em] animate-ping"></div>
-                    <p className="text-green-500 absolute right-6">Pending..</p>
+                  <div className="w-full h-[14em] overflow-scroll">
+                    {IncommingRequests.map((request, index)=> (
+                      <div key={index} id="outgoingRequest" className="w-full relative flex items-center mt-5 gap-2 px-4 h-[50px] bg-secondary rounded-[6px]">
+                        <div style={{backgroundColor: RandomColor()}} className="w-[34px] h-[34px] rounded-full font-semibold flex items-center justify-center bg-red-400">{request[0]}</div>
+                        <h1 className="font-semibold">{request}</h1>
+                          <Button onClick={() => { AcceptRequest(request); }} variant="outline" className="absolute right-4 h-[2.6em]" disabled={loadingAccepting[request]}>
+                            {loadingAccepting[request] ? (
+                              <LoaderCircle className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'Accept'
+                            )}
+                          </Button>                
+                      </div>
+                    ))} 
                   </div>
-                ))}
-              </div>
+
+                  : 
+                  <div className="w-full h-[14em]  overflow-scroll">
+                    {OutgoingRequests.map((request, index)=> (
+
+                      <div key={index} id="outgoingRequest" className="w-full relative flex items-center mt-5 gap-2 px-4 h-[50px] bg-secondary rounded-[6px]">
+                        <div style={{backgroundColor: RandomColor()}} className="w-[34px] h-[34px] rounded-full font-semibold flex items-center justify-center bg-red-400">{request[0]}</div>
+                        <h1 className="font-semibold">{request}</h1>
+                        <div id="dot" className="w-3 h-3 bg-green-500 rounded-full absolute right-[6.4em] "></div>
+                        <div id="dot" className="w-3 h-3 bg-green-500 rounded-full absolute right-[6.4em] animate-ping"></div>
+                        <p className="text-green-500 absolute right-6">Pending..</p>
+                      </div>
+                    ))}
+                  </div>
               }
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            {/* You can add actions here */}
-          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

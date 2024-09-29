@@ -5,8 +5,9 @@ const UserSchema = new mongoose.Schema({
     Email: {type:String, unique: true,  required: true},
     Password: {type:String, required: true},
     Color: {type: String},
+    Friends: {type: [String], default: []},
     outgoingRequests: { type: [String], default: [] }, 
-    incomingRequests: { type: [String], default: [] }, 
+    incomingRequests: { type: [String], default: [] },
 })
 
 module.exports = mongoose.model('users', UserSchema)

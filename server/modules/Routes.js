@@ -36,17 +36,25 @@ router.get('/getAllUsers', async (req,res) => {
 router.post('/sendreq', async (req,res)=> {
     try {
         const {userFrom, userTo} = req.body;
-        const sender = await UserSchema.findOne({Name: userFrom});
-        sender.outgoingRequests.push(userTo);
-        sender.save()
+        // if userFrom alredy have userTo in friend list return error
+        const user = await UserSchema.findOne({ Name: userFrom });
 
-        const reciver = await UserSchema.findOne({Name: userTo});
-        reciver.incomingRequests.push(userFrom);
-        reciver.save()
+        if (user && user.Friends.includes(userTo)) {
+            res.json('User already exists');
+        } else {
+            const sender = await UserSchema.findOne({Name: userFrom});
+            sender.outgoingRequests.push(userTo);
+            sender.save()
 
-        res.status(200).json('ok')
+            const reciver = await UserSchema.findOne({Name: userTo});
+            reciver.incomingRequests.push(userFrom);
+            reciver.save()
+
+            res.status(200).json('ok')
+        }
+
     } catch(error) {
-        console.error(error)
+        console.log(error)
     }
 })
 
@@ -66,7 +74,49 @@ router.post('/getRequests', async (req,res) => {
             incomingRequests: user.incomingRequests,
         });
     } catch(error) {
-        console.error(error)
+        console.log(error)
+    }
+})
+
+router.post('/acceptRequest', async (req,res)=> {
+    try {
+        const {Acceptor, AcceptOf} = req.body;
+        // Check if AcceptOf is already a friend of Acceptor
+        const acceptorUser = await UserSchema.findOne({ Name: Acceptor });
+        if (acceptorUser && acceptorUser.Friends.includes(AcceptOf)) {
+            return res.status(400).send('Already in your friend list'); // Send response if already friends
+        }
+
+        // Check if Acceptor is already a friend of AcceptOf
+        const acceptOfUser = await UserSchema.findOne({ Name: AcceptOf });
+        if (acceptOfUser && acceptOfUser.Friends.includes(Acceptor)) {
+            return res.status(400).send('Already in your friend list'); // Send response if already friends
+        }
+
+
+        // Remove AcceptOf in the Incomming list of Acceptor
+        await UserSchema.updateOne(
+            {Name: Acceptor}, 
+            {
+                $pull: {incomingRequests: AcceptOf},
+                // Add Acceptor to the friends of AcceptOf
+                $addToSet: {Friends: AcceptOf}
+            }
+        );
+        // Remove Acceptor from the Outgoing List Of AcceptOf
+        await UserSchema.updateOne(
+            {Name: AcceptOf}, 
+            {
+                $pull: {outgoingRequests: Acceptor},
+                // Add AcceptOf to the friends of Acceptor
+                $addToSet: {Friends: Acceptor}
+            }
+        );
+
+        res.status(200).json('success');
+    } catch(error) {
+        console.log(error)
+        res.status(500).json('An error occurred');
     }
 })
 
