@@ -1,35 +1,64 @@
 require('dotenv').config();
 const express = require('express');
+const app = express();
 const mongoose = require('mongoose');
 const UserSchema = require('./modules/UserSchema');
 const cors = require('cors');
 const PORT = process.env.PORT;
 const uri = process.env.MONGO_URI;
 const router = require('./modules/Routes');
-
+const http = require('http')
 // Middleware
-const app = express();
 app.use(cors({
     origin: ["https://snaptalks.vercel.app", "http://localhost:5173"],
-    credentials: true
+    methods: ["GET", "POST"],
 }));
 app.use(express.json());
 
-// Connect to MongoDB
-	const ConnectDB = async () => {
-	    try {
-	        await mongoose.connect(uri);
-	    } finally {
-	        console.log('Connected to MongoDB...');
-	    }
-	};
-	ConnectDB();
-app.use('/', router);
-// Express Server
-	app.listen(PORT, () => {
-	    console.log(`Server is running on port: ${PORT}`);
-	});
+// setup socket io server
+const server = http.createServer(app);
+const io = require('socket.io')(server,{
+  cors: {
+    origin: ["http://localhost:5173", "https://snaptalks.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+})
 
-	app.get('/', (req, res) => {
-	    res.send('This is the backend');
-	});
+
+
+// socket io 
+io.on('connection', function(socket){
+	console.log('A user connected');
+	socket.on('createRoom', function(data){
+		var {RoomId} = data;
+		console.log('Room created:', RoomId); // Add this log to verify
+		socket.join(RoomId);
+	    socket.emit('myRoom', {RoomId})
+	})
+    
+
+	socket.on('disconnect', function() {
+		console.log('A user disconnected')
+	})
+})
+
+// Connect to MongoDB
+const ConnectDB = async () => {
+    try {
+        await mongoose.connect(uri);
+    } finally {
+        console.log('Connected to MongoDB...');
+    }
+};
+ConnectDB();
+app.use('/', router);
+
+// Express Server
+server.listen(PORT, () => {
+    console.log(`Server is running on port: ${PORT}`);
+});
+
+app.get('/', (req, res) => {
+    res.send('This is the backend');
+});

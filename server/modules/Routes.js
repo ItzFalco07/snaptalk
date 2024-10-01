@@ -120,5 +120,16 @@ router.post('/acceptRequest', async (req,res)=> {
     }
 })
 
+router.post('/getFriends', async (req,res)=> {
+    try {
+        const {OfFriends} = req.body
+        const ofUserFriends = await UserSchema.findOne({Name: OfFriends})
+        res.status(200).json(ofUserFriends.Friends)
+    } catch(error) {
+        console.log(error)
+        res.status(500).json('error');
+    }
+})
+
 
 module.exports = router;
