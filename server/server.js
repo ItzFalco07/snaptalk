@@ -19,7 +19,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = require('socket.io')(server,{
   cors: {
-    origin: ["http://localhost:5173", "https://snaptalks.vercel.app"],
+    origin: [ "https://snaptalks.vercel.app"],
     methods: ["GET", "POST"],
     credentials: true
   }
