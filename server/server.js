@@ -10,21 +10,20 @@ const router = require('./modules/Routes');
 const http = require('http')
 // Middleware
 app.use(cors({
-    origin: ["https://snaptalks.vercel.app"],
+    origin: "https://snaptalks.vercel.app",
     methods: ["GET", "POST"],
 }));
 app.use(express.json());
 
 // setup socket io server
 const server = http.createServer(app);
-const io = require('socket.io')(server,{
+const io = require('socket.io')(server, {
   cors: {
-    origin: [ "https://snaptalks.vercel.app"],
+    origin: ["https://snaptalks.vercel.app"], // Make sure this is correct
     methods: ["GET", "POST"],
     credentials: true
   }
-})
-
+});
 
 
 // socket io 
