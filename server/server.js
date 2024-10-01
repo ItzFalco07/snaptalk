@@ -10,7 +10,7 @@ const router = require('./modules/Routes');
 const http = require('http')
 // Middleware
 app.use(cors({
-    origin: ["https://snaptalks.vercel.app", "http://localhost:5173"],
+    origin: ["https://snaptalks.vercel.app"],
     methods: ["GET", "POST"],
 }));
 app.use(express.json());

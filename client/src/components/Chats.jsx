@@ -117,7 +117,7 @@ const Chats = () => {
 
     <div className="w-full h-full bg-secondary relative">
       {
-        ChatLoader ? <LoaderCircle className="w-4 h-4 animate-spin absolute m-auto"/>
+        ChatLoader ? <LoaderCircle className="w-6 h-6 animate-spin absolute top-1/2 left-1/2"/>
         : 
         <h1>You are connected to room: {RoomId}</h1>
       }
