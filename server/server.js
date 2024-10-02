@@ -10,7 +10,7 @@ const router = require('./modules/Routes');
 const http = require('http')
 // Middleware
 app.use(cors({
-    origin: "https://snaptalks.vercel.app",
+    origin: ["https://snaptalks.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST"],
 }));
 app.use(express.json());
@@ -19,7 +19,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
   cors: {
-    origin: ["https://snaptalks.vercel.app"], // Make sure this is correct
+    origin: ["https://snaptalks.vercel.app", "http://localhost:5173"], // Make sure this is correct
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -27,21 +27,27 @@ const io = require('socket.io')(server, {
 
 
 // socket io 
-io.on('connection', function(socket){
-	console.log('A user connected');
-	socket.on('createRoom', function(data){
-		var {RoomId} = data;
-		console.log('Room created:', RoomId); // Add this log to verify
-		socket.join(RoomId);
-	    socket.emit('myRoom', {RoomId})
-	})
+io.on('connection', function(socket) {
+  console.log('A user connected');
+
+  socket.on('createRoom', function(data) {
+    var { RoomId, FriendName } = data;
+    console.log('Room created: ', RoomId);
     
+    socket.join(RoomId);
+    socket.emit('myRoom', { RoomId, FriendName });
 
-	socket.on('disconnect', function() {
-		console.log('A user disconnected')
-	})
-})
+    socket.on('msgpush', function(msg) {
+      console.log(msg)
+      // This will send the message to everyone in the room except the sender
+      socket.to(RoomId).emit('msgincomming', msg);
+    });
+  });
 
+  socket.on('disconnect', function() {
+    console.log('A user disconnected');
+  });
+});
 // Connect to MongoDB
 const ConnectDB = async () => {
     try {

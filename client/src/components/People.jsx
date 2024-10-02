@@ -106,7 +106,7 @@ const People = () => {
         disabled={isRequestSent || isLoading}
       >
         {isLoading ? (
-          <LoaderCircle className="w-4 h-4 animate-spin" />
+          <LoaderCircle className="w-6 h-6 animate-spin" />
         ) : isRequestSent ? 'Request Sent' : 'Add Friend'}
       </Button>
     );

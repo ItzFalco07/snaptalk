@@ -11,7 +11,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 212, 93%, 40%;
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 360, 100%, 100%;
     --secondary: 216, 50%, 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -37,7 +37,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
     --primary: 212, 93%, 40%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 360, 100%, 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -82,4 +82,26 @@
 
 #FullLogo {
   transform: translate(-50%, 0);
+}
+
+.center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.break-words {
+  overflow-wrap: break-word; /* This helps in breaking long words */
+  word-break: break-all;     /* This can be used if you want to break long words at any point */
+}
+
+.center-y{
+  transform: translate(0, -50%);
+}
+
+.no-select {
+  user-select: none; /* Standard syntax */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
 }

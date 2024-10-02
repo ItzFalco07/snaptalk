@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react'
 import axios from 'axios'
 import {LoaderCircle} from 'lucide-react'
 import { io } from 'socket.io-client';
+import ChatBoard from './ChatBoard'
 
 const Chats = () => {
   const [Friends, setFriends] = useState([]);
@@ -15,6 +16,7 @@ const Chats = () => {
   const socket = io(`${serverUrl}`); // Replace with your backend URL
   const [RoomId, setRoomId] = useState(false);
   const [ChatLoader, setChatLoader] = useState(false);
+  const [FriendName, setFriendName] = useState(false);
 
   const colors = [
   'rgba(255, 87, 51, 0.6)',   // Red
@@ -68,15 +70,13 @@ const Chats = () => {
 
 
   useEffect(()=>{
-    if(RoomId) {
-      console.log(`room id: ${RoomId}`)
-      socket.emit('createRoom', {RoomId})
+    if(RoomId, FriendName) {
+      socket.emit('createRoom', {RoomId, FriendName})
     }
   }, [RoomId])
 
 
   socket.on('myRoom', function(data) {
-    console.log(data); 
     setChatLoader(false)
   });
 
@@ -97,10 +97,10 @@ const Chats = () => {
        <div id="friends" className="mt-[1em] flex flex-col h-full ">
        {
         Loading ?
-         <LoaderCircle className="w-4 h-4  animate-spin m-auto" /> 
+         <LoaderCircle className="w-6 h-6  animate-spin m-auto" /> 
          :
         FilteredFriends.map((friend, index)=> (
-         <div onClick={()=> {setRoomId([currentUser.Name, friend].sort().join('_')); setChatLoader(true)}} key={index} id="friend" className="cursor-pointer hover:bg-secondary2 bg-secondary w-full h-[fit-content] mb-5 p-3 rounded-[12px]">
+         <div onClick={()=> {setRoomId([currentUser.Name, friend].sort().join('_')); setChatLoader(true); setFriendName(friend)}} key={index} id="friend" className="cursor-pointer hover:bg-secondary2 bg-secondary w-full h-[fit-content] mb-5 p-3 rounded-[12px]">
            <div className="w-full relative flex gap-5 py-1 items-center">
               <div style={{backgroundColor: RandomColors[index]}} className="w-[35px] h-[35px] rounded-full flex items-center justify-center font-semibold">{friend[0]}</div>
               <div>
@@ -117,9 +117,10 @@ const Chats = () => {
 
     <div className="w-full h-full bg-secondary relative">
       {
+
         ChatLoader ? <LoaderCircle className="w-6 h-6 animate-spin absolute top-1/2 left-1/2"/>
         : 
-        <h1>You are connected to room: {RoomId}</h1>
+        <ChatBoard RoomId = {RoomId} FriendName={FriendName} RandomColors={RandomColors} FilteredFriends={FilteredFriends}  />
       }
     </div>
     </div>
