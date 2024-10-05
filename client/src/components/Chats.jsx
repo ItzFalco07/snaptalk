@@ -18,6 +18,7 @@ const Chats = () => {
   const [ChatLoader, setChatLoader] = useState(false);
   const [FriendName, setFriendName] = useState(false);
 
+
   const colors = [
   'rgba(255, 87, 51, 0.6)',   // Red
   'rgba(51, 255, 87, 0.6)',   // Green

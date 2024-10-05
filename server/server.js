@@ -10,7 +10,7 @@ const router = require('./modules/Routes');
 const http = require('http')
 // Middleware
 app.use(cors({
-    origin: ["https://snaptalks.vercel.app", "http://localhost:5173"],
+    origin: ["https://snaptalks.vercel.app", "http://localhost:5173", "http://localhost:5174"],
     methods: ["GET", "POST"],
 }));
 app.use(express.json());
@@ -19,7 +19,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
   cors: {
-    origin: ["https://snaptalks.vercel.app", "http://localhost:5173"], // Make sure this is correct
+    origin: ["https://snaptalks.vercel.app", "http://localhost:5173", "http://localhost:5174"], // Make sure this is correct
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -57,7 +57,10 @@ const ConnectDB = async () => {
     }
 };
 ConnectDB();
-app.use('/', router);
+app.use('/', (req, res, next) => {
+    req.io = io;  // Attach the Socket.IO instance to req object
+    next();
+}, router);
 
 // Express Server
 server.listen(PORT, () => {

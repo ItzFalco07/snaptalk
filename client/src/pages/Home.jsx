@@ -13,17 +13,17 @@ function App() {
   const [Select, setSelect] = useState("Chats");
   const User = localStorage.getItem('User')
   useEffect(()=> {
-  if(!User) {
-    Navigate('/')
-  }
-}, [])
+    if(!User) {
+      Navigate('/')
+    }
+  }, [])
 
   return (
     <>      
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme"> 
       <div id="container" className="flex">
         <Nav Select={Select} setSelect={setSelect} />
-        {Select === "Chats" && <Chats />}
+        {Select === "Chats" && <Chats/>}
         {Select === "People" && <People />}
         {Select === "Call" && <Call />}
         {Select === "Settings" && <Settings />}

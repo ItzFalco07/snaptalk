@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const UserSchema = require('./UserSchema');
+const MessageSchema = require('./MessageSchema');
 
-// User creation route
 router.post('/createUser', async (req, res) => {
     try {
         const { Name, Email, Password, Color } = req.body;
@@ -21,8 +21,6 @@ router.post('/createUser', async (req, res) => {
         res.status(500).json('error');
     }
 });
-
-// get all users from DB
 router.get('/getAllUsers', async (req,res) => {
     try {
         const Users = await UserSchema.find({})
@@ -31,8 +29,6 @@ router.get('/getAllUsers', async (req,res) => {
         console.error(error)
     }
 })
-
-// handle Requests
 router.post('/sendreq', async (req,res)=> {
     try {
         const {userFrom, userTo} = req.body;
@@ -57,8 +53,6 @@ router.post('/sendreq', async (req,res)=> {
         console.log(error)
     }
 })
-
-// get Incomming and Outgoing requests of user
 router.post('/getRequests', async (req,res) => {
     try {
         const {userName} = req.body
@@ -77,7 +71,6 @@ router.post('/getRequests', async (req,res) => {
         console.log(error)
     }
 })
-
 router.post('/acceptRequest', async (req,res)=> {
     try {
         const {Acceptor, AcceptOf} = req.body;
@@ -119,7 +112,6 @@ router.post('/acceptRequest', async (req,res)=> {
         res.status(500).json('An error occurred');
     }
 })
-
 router.post('/getFriends', async (req,res)=> {
     try {
         const {OfFriends} = req.body
@@ -130,6 +122,47 @@ router.post('/getFriends', async (req,res)=> {
         res.status(500).json('error');
     }
 })
+router.post('/postMessages', async (req,res)=> {
+    try {
+        const {RoomIdFromClient, messagesFromClient, nameFromClient} = req.body;
 
+        const currentUser = nameFromClient
+        const otherUser = RoomIdFromClient.split('_').find((user) => user !== currentUser);
+        
+        messagesFromClient.map(message => {
+            if(message.type == 'outgoing') {
+                delete message.type
+                message.sender = currentUser
+                message.recipient = otherUser
+            } else {
+                delete message.type
+                message.sender = otherUser
+                message.recipient = currentUser
+            }
+        })
+
+        const MessageRoom = await MessageSchema.findOne({RoomId: RoomIdFromClient})
+        if(!MessageRoom) {
+            const MessageRoomNew = new MessageSchema({RoomId: RoomIdFromClient, messages: messagesFromClient});
+            MessageRoomNew.save();
+            console.log('messages created')
+        } else {
+            MessageRoom.messages.push(...messagesFromClient);
+            MessageRoom.save()
+        }
+
+
+        req.io.to(RoomIdFromClient).emit('messageUpdate', true);
+        console.log("successfully added messages and sent bullean true to other client")
+    } catch(error) {
+        console.error(error)
+    }
+})
+router.post('/getMessages', async (req,res)=> {
+    const {idFromClient} = req.body
+    const roomMessages = await MessageSchema.findOne({RoomId: idFromClient})
+    console.log(roomMessages)
+    res.send(roomMessages);
+})
 
 module.exports = router;

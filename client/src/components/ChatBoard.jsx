@@ -1,91 +1,150 @@
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useReducer } from 'react';
 import { io } from 'socket.io-client';
 import {SmilePlus, Send} from 'lucide-react'
 import EmojiPicker from './EmojiPicker';
+import axios from 'axios'
 
 const ChatBoard = ({ RoomId, FriendName, RandomColors, FilteredFriends }) => {
-  const [Input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
-  const serverUrl = import.meta.env.VITE_SERVER_URL;
-  const [socket, setSocket] = useState(null);
-  const ChatBoardMessages = useRef(null);
-  const [Emoji, setEmoji] = useState(false);
-  
-  var friendIndex = false; 
-  if (FriendName) {
-    friendIndex = FilteredFriends.indexOf(FriendName);
-  }
+  const [ messages, setMessages ] = useState([]);
+  const [OldMessages, setOldMessages] = useState([]);
+  const currentUser = JSON.parse(localStorage.getItem('User'));
+  // all working code
+    const [Input, setInput] = useState('');
+    const serverUrl = import.meta.env.VITE_SERVER_URL;
+    const [socket, setSocket] = useState(null);
+    const ChatBoardMessages = useRef(null);
+    const [Emoji, setEmoji] = useState(false);
 
-  useEffect(() => {
-    const newSocket = io(serverUrl);
-    setSocket(newSocket);
+    var friendIndex = false; 
+    if (FriendName) {
+      friendIndex = FilteredFriends.indexOf(FriendName);
+    }
 
-    newSocket.on('connect', () => {
-      // Join the room after connecting
-      newSocket.emit('createRoom', { RoomId, FriendName });
-    });
+    useEffect(() => {
+      const newSocket = io(serverUrl);
+      setSocket(newSocket);
 
-    newSocket.on('msgincomming', (data) => {
-      console.log('Incoming message received:', data);
-        let newIncomming = {
-          text: data,
-          type: 'incomming'
+      newSocket.on('connect', () => {
+        // Join the room after connecting
+        newSocket.emit('createRoom', { RoomId, FriendName });
+      });
+
+      newSocket.on('msgincomming', (data) => {
+        console.log('Incoming message received:', data);
+          let newIncomming = {
+            text: data,
+            type: 'incomming'
+          };
+          setMessages((prevMsgs) => [...prevMsgs, newIncomming]);
+          setTimeout(() => {
+            ChatBoardMessages.current.scrollTop = ChatBoardMessages.current.scrollHeight;
+          }, 0);
+      });
+
+      return () => {
+        newSocket.disconnect();  // Clean up the socket connection on unmount
+      };
+    }, [RoomId, FriendName, serverUrl]); // Add RoomId and FriendName to the dependency array
+
+    function handleAddOutgoing() {
+      setEmoji(false)
+      if (Input.trim() !== '') {
+        let newOutgoing = {
+          text: Input,
+          type: 'outgoing'
         };
-        setMessages((prevMsgs) => [...prevMsgs, newIncomming]);
+
+        socket.emit('msgpush', Input); // Send the message
+
+        setMessages((prevMsgs) => [...prevMsgs, newOutgoing]);
+        setInput('');
         setTimeout(() => {
           ChatBoardMessages.current.scrollTop = ChatBoardMessages.current.scrollHeight;
         }, 0);
-    });
+     }
+    }
 
-    return () => {
-      newSocket.disconnect();  // Clean up the socket connection on unmount
-    };
-  }, [RoomId, FriendName, serverUrl]); // Add RoomId and FriendName to the dependency array
 
-  function handleAddOutgoing() {
-    setEmoji(false)
-    if (Input.trim() !== '') {
-      let newOutgoing = {
-        text: Input,
-        type: 'outgoing'
+
+    useEffect(() => {
+      const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+          handleAddOutgoing();
+        }
       };
 
-      socket.emit('msgpush', Input); // Send the message
+      document.addEventListener('keydown', handleKeyPress);
 
-      setMessages((prevMsgs) => [...prevMsgs, newOutgoing]);
-      setInput('');
-      setTimeout(() => {
-        ChatBoardMessages.current.scrollTop = ChatBoardMessages.current.scrollHeight;
-      }, 0);
-   }
-  }
+      return () => {
+        document.removeEventListener('keydown', handleKeyPress);
+      };
+    }, [Input]);
 
-  useEffect(() => {
-    console.log(messages);
-  }, [messages]);
-
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.key === 'Enter') {
-        handleAddOutgoing();
+    function HandleEmojiToggle () {
+      if(Emoji){
+        setEmoji(false)
+      } else {
+        setEmoji(true)
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleKeyPress);
+const messagesRef = useRef(messages);
 
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [Input]);
+useEffect(() => {
+  console.log(OldMessages);
+}, [OldMessages]);
 
-  function HandleEmojiToggle () {
-    if(Emoji){
-      setEmoji(false)
-    } else {
-      setEmoji(true)
+
+const HandleSendMessage = () => {
+  try {
+    console.log('function called')
+    if(messagesRef.current.length > 0 && RoomId) {
+      console.log(messagesRef.current, RoomId)
+      axios.post(`${serverUrl}/postMessages`,{messagesFromClient: messagesRef.current, RoomIdFromClient: RoomId, nameFromClient: currentUser.Name})
+    }
+  } catch(error) {
+    console.log(error);
+  }
+};
+
+if(socket) {
+  socket.on('messageUpdate', function(data){
+    if(data){
+      setMessages([]);
+      getMessages();
+      console.log('messages cleared')
+    }
+  })
+}
+
+const getMessages = async () => {
+  try {
+    const OldMessagesServer = await axios.post(`${serverUrl}/getMessages`, {idFromClient: RoomId})
+    if(OldMessagesServer.data) {
+      setOldMessages(OldMessagesServer.data.messages);
+    }
+
+  } catch(error) {
+    console.error(error);
+  }
+}
+
+useEffect(() => {
+  messagesRef.current = messages;
+}, [messages]);
+
+
+useEffect(() => {
+  getMessages()
+
+  return () => {
+    HandleSendMessage()
+    if(socket) {
+      socket.off('messageUpdate');
     }
   }
+}, []);
 
   return (
     <>
@@ -97,6 +156,14 @@ const ChatBoard = ({ RoomId, FriendName, RandomColors, FilteredFriends }) => {
           </div>
 
           <div ref={ChatBoardMessages}  id="messages" className="w-full h-[81vh] p-5 relative overflow-y-scroll">
+            {OldMessages.map((message, index) => (
+              <div key={index} className="w-full relative h-[fit-content]">
+                <div className={`${message.sender === currentUser.Name ? 'bg-primary ml-auto text-primary-foreground ' : 'bg-background mr-auto'} relative px-4 break-words rounded-[16px] border-[2px] p-2 font-medium w-[fit-content] mt-3 max-w-[400px] text-wrap text-[1.1em]`}>
+                  {message.text}
+                </div>
+              </div>
+            ))}
+
             {messages.map((message, index) => (
               <div key={index} className="w-full relative h-[fit-content]">
                 <div className={`${message.type === 'outgoing' ? 'bg-primary ml-auto text-primary-foreground ' : 'bg-background mr-auto'} relative px-4 break-words rounded-[16px] border-[2px] p-2 font-medium w-[fit-content] mt-3 max-w-[400px] text-wrap text-[1.1em]`}>
